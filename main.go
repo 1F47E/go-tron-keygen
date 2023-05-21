@@ -18,12 +18,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/btcsuite/btcd/btcutil/base58"
-
-	"crypto/sha256"
+	// "github.com/btcsuite/btcd/btcutil/base58"
+	"go-tron-keygen/base58"
 
 	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
-	"github.com/ethereum/go-ethereum/crypto"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -63,7 +61,13 @@ func publicKeyToHex(pubKey *ecdsa.PublicKey) string {
 
 func addressFromPublicKey(pub *ecdsa.PublicKey) [21]byte {
 	// shop off the first byte
-	xy := crypto.FromECDSAPub(pub)[1:]
+	// xy := crypto.FromECDSAPub(pub)[1:]
+	var xy []byte
+	if pub == nil || pub.X == nil || pub.Y == nil {
+		xy = nil
+	} else {
+		xy = elliptic.Marshal(secp.S256(), pub.X, pub.Y)
+	}
 
 	h := sha3.NewLegacyKeccak256()
 	if _, err := h.Write(xy); err != nil {
@@ -90,16 +94,8 @@ func addressToHex(address [21]byte) string {
 
 // Encode the address as base58 with checksum
 // Checksum is first 4 bytes of a sha256 double hash of the address.
-// Doing manually here for educational purposes, but could be done via base58.CheckEncode
 func addressToBase58(address [21]byte) string {
-	// return base58.CheckEncode(address[1:], 0x41)
-	// double hash the address with sha256
-	hash1 := sha256.Sum256(address[:])
-	hash2 := sha256.Sum256(hash1[:])
-	checkshum := hash2[:4]
-	// append the checksum to the address
-	withCheck := append(address[:], checkshum[:]...)
-	return base58.Encode(withCheck)
+	return base58.CheckEncode(address[1:], 0x41)
 }
 
 func main() {
